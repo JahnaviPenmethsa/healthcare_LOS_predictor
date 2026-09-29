@@ -3,8 +3,8 @@ import requests
 
 st.title("🏥 Hospital AI Assistant")
 
-# Create two tabs
-tab1, tab2 = st.tabs(["🛏️ Length of Stay", "⚠️ Renal Disease Risk"])
+# Create tabs
+tab1, tab2, tab3 = st.tabs(["🛏️ Length of Stay", "⚠️ Renal Disease Risk", "🫁 Respiratory Risk"])
 
 with tab1:
     st.write("Predict how many days a patient will need a bed.")
@@ -41,3 +41,22 @@ with tab2:
                 st.success(f"**Low Risk:** {risk:.1f}% probability")
         else:
             st.error(f"API Error: Server is booting up or failed. Details: {response.text}")
+
+with tab3:
+        st.write("Predict the risk of Pneumonia and respiratory complications at admission.")
+        respiration = st.slider("Respiration Rate (breaths/min)", 10.0, 30.0, 15.0)
+        neutrophils = st.slider("Neutrophils (Infection Marker)", 1.0, 20.0, 10.0)
+        
+        if st.button("Predict Respiratory Risk"):
+            data = {"respiration": respiration, "neutrophils": neutrophils}
+            response = requests.post("https://healthcare-los-predictor.onrender.com/predict_respiratory", json={"data": data})
+            
+            # Check if the API successfully processed the request
+            if response.status_code == 200:
+                risk = response.json()['respiratory_risk_probability'] * 100
+                if risk > 50:
+                    st.error(f"**High Risk:** {risk:.1f}% probability of Pneumonia/Respiratory Complication")
+                else:
+                    st.success(f"**Low Risk:** {risk:.1f}% probability")
+            else:
+                st.error(f"API Error: Server is booting up or failed. Details: {response.text}")
