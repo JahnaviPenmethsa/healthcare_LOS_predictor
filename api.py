@@ -14,6 +14,9 @@ rf_features = joblib.load('model_features.joblib')
 xgb_model = joblib.load('xgb_model.joblib')
 xgb_features = joblib.load('classification_features.joblib')
 
+# Load Respiratory Model
+resp_model = joblib.load('resp_model.joblib')
+resp_features = joblib.load('resp_features.joblib')
 class PatientData(BaseModel):
     data: dict
 
@@ -35,3 +38,12 @@ def predict_risk(patient: PatientData):
     # XGBoost returns probabilities for [Healthy, Sick]
     risk_prob = xgb_model.predict_proba(input_df[xgb_features])[0][1]
     return {"renal_risk_probability": round(float(risk_prob), 2)}
+
+@app.post("/predict_respiratory")
+def predict_respiratory(patient: PatientData):
+    input_df = pd.DataFrame([patient.data])
+    for col in resp_features:
+        if col not in input_df.columns:
+            input_df[col] = 0
+    risk_prob = resp_model.predict_proba(input_df[resp_features])[0][1]
+    return {"respiratory_risk_probability": round(float(risk_prob), 2)}
