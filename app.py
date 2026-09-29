@@ -27,13 +27,17 @@ with tab2:
     st.write("Predict the risk of End-Stage Renal Disease at admission.")
     blood_urea = st.slider("Blood Urea Nitrogen", 0.0, 50.0, 15.0)
     creatinine = st.slider("Creatinine Level", 0.0, 10.0, 1.0)
-    
+
     if st.button("Predict Risk"):
         data = {"bloodureanitro": blood_urea, "creatinine": creatinine}
         response = requests.post("https://healthcare-los-predictor.onrender.com/predict_risk", json={"data": data})
-        risk = response.json()['renal_risk_probability'] * 100
         
-        if risk > 50:
-            st.error(f"**High Risk:** {risk:.1f}% probability of Renal Disease")
+        # Check if the API successfully processed the request (Status Code 200)
+        if response.status_code == 200:
+            risk = response.json()['renal_risk_probability'] * 100
+            if risk > 50:
+                st.error(f"**High Risk:** {risk:.1f}% probability of Renal Disease")
+            else:
+                st.success(f"**Low Risk:** {risk:.1f}% probability")
         else:
-            st.success(f"**Low Risk:** {risk:.1f}% probability")
+            st.error(f"API Error: Server is booting up or failed. Details: {response.text}")
