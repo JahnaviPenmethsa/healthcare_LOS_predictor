@@ -6,23 +6,32 @@ import pandas as pd
 # Initialize the API
 app = FastAPI(title="Hospital LOS Prediction API")
 
-# Load our saved model and features
-model = joblib.load('rf_model.joblib')
-expected_features = joblib.load('model_features.joblib')
+# Load LOS Model
+rf_model = joblib.load('rf_model.joblib')
+rf_features = joblib.load('model_features.joblib')
 
-# Define the expected incoming data format
+# Load Risk Model
+xgb_model = joblib.load('xgb_model.joblib')
+xgb_features = joblib.load('classification_features.joblib')
+
 class PatientData(BaseModel):
     data: dict
 
 @app.post("/predict")
 def predict_los(patient: PatientData):
     input_df = pd.DataFrame([patient.data])
-
-    for col in expected_features:
+    for col in rf_features:
         if col not in input_df.columns:
             input_df[col] = 0
-
-    input_df = input_df[expected_features]
-    prediction = model.predict(input_df)
-
+    prediction = rf_model.predict(input_df[rf_features])
     return {"predicted_length_of_stay_days": round(float(prediction[0]), 2)}
+
+@app.post("/predict_risk")
+def predict_risk(patient: PatientData):
+    input_df = pd.DataFrame([patient.data])
+    for col in xgb_features:
+        if col not in input_df.columns:
+            input_df[col] = 0
+    # XGBoost returns probabilities for [Healthy, Sick]
+    risk_prob = xgb_model.predict_proba(input_df[xgb_features])[0][1]
+    return {"renal_risk_probability": round(float(risk_prob), 2)}
