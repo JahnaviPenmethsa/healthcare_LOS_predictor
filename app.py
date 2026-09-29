@@ -1,34 +1,39 @@
 import streamlit as st
 import requests
 
-st.title("🏥 Hospital Length of Stay Predictor")
-st.write("Enter patient details at admission to predict how many days they will need a bed.")
+st.title("🏥 Hospital AI Assistant")
 
-# 1. Create input fields for the user
-col1, col2 = st.columns(2)
-with col1:
-    prior_visits = st.selectbox("Prior Visits (rcount)", ["0", "1", "2", "3", "4", "5+"])
-with col2:
-    facility = st.selectbox("Facility ID", ["A", "B", "C", "D", "E"])
-    
-hematocrit = st.slider("Hematocrit Level", 10.0, 20.0, 12.0)
+# Create two tabs
+tab1, tab2 = st.tabs(["🛏️ Length of Stay", "⚠️ Renal Disease Risk"])
 
-# 2. Predict button
-if st.button("Predict LOS"):
-    # 3. Format the data to match what the API expects
-    data = {"hematocrit": hematocrit}
-    
-    if prior_visits != "0":
-        data[f"rcount_{prior_visits}"] = 1
-    data[f"facid_{facility}"] = 1
-    
-    # 4. Send the data to our running FastAPI backend
-    try:
+with tab1:
+    st.write("Predict how many days a patient will need a bed.")
+    col1, col2 = st.columns(2)
+    with col1:
+        prior_visits = st.selectbox("Prior Visits", ["0", "1", "2", "3", "4", "5+"])
+    with col2:
+        facility = st.selectbox("Facility ID", ["A", "B", "C", "D", "E"])
+    hematocrit = st.slider("Hematocrit Level", 10.0, 20.0, 12.0)
+
+    if st.button("Predict LOS"):
+        data = {"hematocrit": hematocrit}
+        if prior_visits != "0": data[f"rcount_{prior_visits}"] = 1
+        data[f"facid_{facility}"] = 1
+        
         response = requests.post("https://healthcare-los-predictor.onrender.com/predict", json={"data": data})
-        if response.status_code == 200:
-            result = response.json()
-            st.success(f"**Predicted Length of Stay:** {result['predicted_length_of_stay_days']} days")
+        st.success(f"**Predicted Length of Stay:** {response.json()['predicted_length_of_stay_days']} days")
+
+with tab2:
+    st.write("Predict the risk of End-Stage Renal Disease at admission.")
+    blood_urea = st.slider("Blood Urea Nitrogen", 0.0, 50.0, 15.0)
+    creatinine = st.slider("Creatinine Level", 0.0, 10.0, 1.0)
+    
+    if st.button("Predict Risk"):
+        data = {"bloodureanitro": blood_urea, "creatinine": creatinine}
+        response = requests.post("https://healthcare-los-predictor.onrender.com/predict_risk", json={"data": data})
+        risk = response.json()['renal_risk_probability'] * 100
+        
+        if risk > 50:
+            st.error(f"**High Risk:** {risk:.1f}% probability of Renal Disease")
         else:
-            st.error("API Error")
-    except requests.exceptions.ConnectionError:
-        st.error("Could not connect to the API. Is Uvicorn running in your other terminal?")
+            st.success(f"**Low Risk:** {risk:.1f}% probability")
