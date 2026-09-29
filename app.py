@@ -24,7 +24,7 @@ if st.button("Predict LOS"):
     
     # 4. Send the data to our running FastAPI backend
     try:
-        response = requests.post("http://127.0.0.1:8000/predict", json={"data": data})
+        response = requests.post("https://healthcare-los-predictor.onrender.com/predict", json={"data": data})
         if response.status_code == 200:
             result = response.json()
             st.success(f"**Predicted Length of Stay:** {result['predicted_length_of_stay_days']} days")
